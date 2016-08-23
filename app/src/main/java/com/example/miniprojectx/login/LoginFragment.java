@@ -93,36 +93,6 @@ public class LoginFragment extends Fragment {
         return view;
     }
 
-
-    @OnClick(R.id.btn_login)
-    public void onLogin(View view) {
-        final String email = emailView.getText().toString();
-        final String password = passwordView.getText().toString();
-        LoginRequest request = new LoginRequest(getContext(), email, password, "1234");
-        NetworkManager.getInstance().getNetworkData(request, new NetworkManager.OnResultListener<NetworkResult<User>>() {
-            @Override
-            public void onSuccess(NetworkRequest<NetworkResult<User>> request, NetworkResult<User> result) {
-                User user = result.getResult();
-                Toast.makeText(getContext(), "user id : " + user.getId(), Toast.LENGTH_SHORT).show();
-                PropertyManager.getInstance().setEmail(email);
-                PropertyManager.getInstance().setPassword(password);
-                PropertyManager.getInstance().setRegistrationId("1234");
-                ((SimpleLoginActivity) getActivity()).moveMainActivity();
-            }
-
-            @Override
-            public void onFail(NetworkRequest<NetworkResult<User>> request, int errorCode, String errorMessage, Throwable e) {
-                Toast.makeText(getContext(), "error : " + errorMessage, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    @OnClick(R.id.btn_signup)
-    public void onSignUp() {
-        ((SimpleLoginActivity) getActivity()).changeSingup();
-    }
-
-
     // facebook callback 함수
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -143,7 +113,7 @@ public class LoginFragment extends Fragment {
                 @Override
                 public void onSuccess(NetworkRequest<NetworkResult<Object>> request, NetworkResult<Object> result) {
                     if (result.getCode() == 1) {
-                        String facebookId = accessToken.getApplicationId();
+                        String facebookId = accessToken.getUserId();
                         PropertyManager.getInstance().setFacebookId(facebookId);
                         ((SimpleLoginActivity) getActivity()).moveMainActivity();
                     } else if (result.getCode() == 3) {
@@ -158,6 +128,35 @@ public class LoginFragment extends Fragment {
                 }
             });
         }
+    }
+
+
+    @OnClick(R.id.btn_login)
+    public void onLogin(View view) {
+        final String email = emailView.getText().toString();
+        final String password = passwordView.getText().toString();
+        String regid = PropertyManager.getInstance().getRegistrationId();
+        LoginRequest request = new LoginRequest(getContext(), email, password, regid);
+        NetworkManager.getInstance().getNetworkData(request, new NetworkManager.OnResultListener<NetworkResult<User>>() {
+            @Override
+            public void onSuccess(NetworkRequest<NetworkResult<User>> request, NetworkResult<User> result) {
+                User user = result.getResult();
+                Toast.makeText(getContext(), "user id : " + user.getId(), Toast.LENGTH_SHORT).show();
+                PropertyManager.getInstance().setEmail(email);
+                PropertyManager.getInstance().setPassword(password);
+                ((SimpleLoginActivity) getActivity()).moveMainActivity();
+            }
+
+            @Override
+            public void onFail(NetworkRequest<NetworkResult<User>> request, int errorCode, String errorMessage, Throwable e) {
+                Toast.makeText(getContext(), "error : " + errorMessage, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @OnClick(R.id.btn_signup)
+    public void onSignUp() {
+        ((SimpleLoginActivity) getActivity()).changeSingup();
     }
 
 

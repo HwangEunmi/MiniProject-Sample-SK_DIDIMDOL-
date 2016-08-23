@@ -1,10 +1,16 @@
 package com.example.miniprojectx;
 
+import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
+import android.telecom.Call;
 import android.text.TextUtils;
 
 import com.example.miniprojectx.data.NetworkResult;
@@ -13,15 +19,27 @@ import com.example.miniprojectx.login.SimpleLoginActivity;
 import com.example.miniprojectx.manager.NetworkManager;
 import com.example.miniprojectx.manager.NetworkRequest;
 import com.example.miniprojectx.manager.PropertyManager;
+import com.example.miniprojectx.request.FacebookLoginRequest;
 import com.example.miniprojectx.request.LoginRequest;
 import com.example.miniprojectx.request.ProfileRequest;
+import com.facebook.AccessToken;
+import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
+import com.facebook.login.LoginManager;
+import com.facebook.login.LoginResult;
 
 public class SplashActivity extends AppCompatActivity {
+    LoginManager loginManager;
+    CallbackManager callbackManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
+
+        loginManager = LoginManager.getInstance();
+        callbackManager = CallbackManager.Factory.create();
 
         ProfileRequest request = new ProfileRequest(this);
         // ProfileRequest의 request의 객체 만듬
@@ -48,16 +66,115 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     private void loginSharedPreference() {
-        if (isAutoLogin()) {
+        if (isFacebookLogin()) {
+            processFacebookLogin();
+        } else if (isAutoLogin()) {
             processAutoLogin();
         } else {
             moveLoginActivity();
         }
     }
+
+    private void processFacebookLogin() {
+        AccessToken accessToken = AccessToken.getCurrentAccessToken();
+        if (!accessToken.getUserId().equals(PropertyManager.getInstance().getFacebookId())) {
+            resetFacebookAndMoveLoginActivity();
+            return;
+        }
+        if (accessToken != null) {
+            String token = accessToken.getToken();
+            String regId = PropertyManager.getInstance().getRegistrationId();
+            FacebookLoginRequest request = new FacebookLoginRequest(this, token, regId);
+            NetworkManager.getInstance().getNetworkData(request, new NetworkManager.OnResultListener<NetworkResult<Object>>() {
+                @Override
+                public void onSuccess(NetworkRequest<NetworkResult<Object>> request, NetworkResult<Object> result) {
+                    if (result.getCode() == 1) {
+                        moveMainActivity();
+                    } else {
+                        resetFacebookAndMoveLoginActivity();
+                    }
+
+                }
+
+                @Override
+                public void onFail(NetworkRequest<NetworkResult<Object>> request, int errorCode, String errorMessage, Throwable e) {
+                    loginManager.logOut();
+                    facebookLogin();
+                }
+            });
+        } else {
+            facebookLogin();
+        }
+    }
+
+    private void facebookLogin() {
+        loginManager.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
+            @Override
+            public void onSuccess(LoginResult result) {
+                AccessToken accessToken = AccessToken.getCurrentAccessToken();
+                if (!accessToken.getUserId().equals(PropertyManager.getInstance().getFacebookId())) {
+                    resetFacebookAndMoveLoginActivity();
+                    return;
+                }
+                FacebookLoginRequest request = new FacebookLoginRequest(SplashActivity.this, accessToken.getToken(),
+                        PropertyManager.getInstance().getRegistrationId());
+
+                NetworkManager.getInstance().getNetworkData(request, new NetworkManager.OnResultListener<NetworkResult<Object>>() {
+                    @Override
+                    public void onSuccess(NetworkRequest<NetworkResult<Object>> request, NetworkResult<Object> result) {
+                        if (result.getCode() == 1) {
+                            moveMainActivity();
+                        } else {
+                            resetFacebookAndMoveLoginActivity();
+                        }
+                    }
+
+                    @Override
+                    public void onFail(NetworkRequest<NetworkResult<Object>> request, int errorCode, String errorMessage, Throwable e) {
+                        resetFacebookAndMoveLoginActivity();
+                    }
+                });
+
+            }
+
+            @Override
+            public void onCancel() {
+
+            }
+
+            @Override
+            public void onError(FacebookException error) {
+
+            }
+        });
+        loginManager.logInWithReadPermissions(this, null);
+    }
+
+
+    private void resetFacebookAndMoveLoginActivity() {
+        loginManager.logOut();
+        PropertyManager.getInstance().setFacebookId("");
+        moveLoginActivity();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        callbackManager.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private boolean isFacebookLogin() {
+        if (!TextUtils.isEmpty(PropertyManager.getInstance().getFacebookId())) {
+            return true;
+        }
+        return false;
+    }
+
     private boolean isAutoLogin() {
         String email = PropertyManager.getInstance().getEmail();
         return !TextUtils.isEmpty(email);
     }
+
     private void processAutoLogin() {
         String email = PropertyManager.getInstance().getEmail();
         if (!TextUtils.isEmpty(email)) {

@@ -48,34 +48,34 @@ public class ChatActivity extends AppCompatActivity {
         listView.setLayoutManager(new LinearLayoutManager(this));
     }
 
-    @OnClick(R.id.btn_send)
-    public void onSend(View view) {
-        String message = inputView.getText().toString();
-        // EditText로 쓴 값 message라는 String변수로 넣음
-
-        int type = ChatContract.ChatMessage.TYPE_SEND;
-        // Send라는 타입을 int형 변수에 넣음
-
-        switch (typeView.getCheckedRadioButtonId()) {
-            // RadioGroup에 체크된 버튼의 id값을 얻어와서 봤을 때
-
-            case R.id.radio_send :
-                // send이면
-                type = ChatContract.ChatMessage.TYPE_SEND;
-                // type 변수에 Send라는 타입을 셋팅함
-                break;
-
-            case R.id.radio_receive :
-                // receive이면
-                type = ChatContract.ChatMessage.TYPE_RECEIVE;
-                // type변수에 Receive라는 타입을 셋팅함
-                break;
-        }
-        DBManager.getInstance().addMessage(user, type, message);
-        // User객체랑, type이랑 message값을 message에 추가하는 addMessage 함수를 호출(DB매니저에 있음)
-        updateMessage();
-        // 메시지를 업뎃시키는 함수 호출
-    }
+//    @OnClick(R.id.btn_send)
+//    public void onSend(View view) {
+//        String message = inputView.getText().toString();
+//        // EditText로 쓴 값 message라는 String변수로 넣음
+//
+//        int type = ChatContract.ChatMessage.TYPE_SEND;
+//        // Send라는 타입을 int형 변수에 넣음
+//
+//        switch (typeView.getCheckedRadioButtonId()) {
+//            // RadioGroup에 체크된 버튼의 id값을 얻어와서 봤을 때
+//
+//            case R.id.radio_send :
+//                // send이면
+//                type = ChatContract.ChatMessage.TYPE_SEND;
+//                // type 변수에 Send라는 타입을 셋팅함
+//                break;
+//
+//            case R.id.radio_receive :
+//                // receive이면
+//                type = ChatContract.ChatMessage.TYPE_RECEIVE;
+//                // type변수에 Receive라는 타입을 셋팅함
+//                break;
+//        }
+//        DBManager.getInstance().addMessage(user, type, message);
+//        // User객체랑, type이랑 message값을 message에 추가하는 addMessage 함수를 호출(DB매니저에 있음)
+//        updateMessage();
+//        // 메시지를 업뎃시키는 함수 호출
+//    }
 
     private void updateMessage() {
         Cursor c = DBManager.getInstance().getChatMessage(user);
